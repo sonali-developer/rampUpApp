@@ -13,6 +13,7 @@ import ARKit
 class RampPlacerViewController: UIViewController, ARSCNViewDelegate, UIPopoverPresentationControllerDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    var selectedRamp: String?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,7 +25,8 @@ class RampPlacerViewController: UIViewController, ARSCNViewDelegate, UIPopoverPr
         sceneView.showsStatistics = true
         
         // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/quarter.dae")!
+        let scene = SCNScene(named: "art.scnassets/mainScene.scn")!
+        sceneView.autoenablesDefaultLighting = true
         
         // Set the scene to the view
         sceneView.scene = scene
@@ -78,6 +80,17 @@ class RampPlacerViewController: UIViewController, ARSCNViewDelegate, UIPopoverPr
         
     }
     
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        // Used for getting the hit position on sceneView
+        guard let touch = touches.first else { return }
+        let results = sceneView.hitTest(touch.location(in: sceneView), types: [ .featurePoint])
+        guard let hitFeature = results.last else { return }
+        let hitTransform = SCNMatrix4(hitFeature.worldTransform)
+        let hitPosition = SCNVector3Make(hitTransform.m41, hitTransform.m42, hitTransform.m43)
+        placeRamp(position: hitPosition)
+        
+    }
+    
     func adaptivePresentationStyle(for controller: UIPresentationController) -> UIModalPresentationStyle {
         return .none
     }
@@ -100,8 +113,17 @@ class RampPlacerViewController: UIViewController, ARSCNViewDelegate, UIPopoverPr
     }
     
     func onRampSelected(_ rampName: String) {
-        
+        selectedRamp = rampName
     }
     
+    func placeRamp(position: SCNVector3) {
+        // Contains the code for placing the ramp at hit position on sceneView screen
+        if let rampName = selectedRamp {
+        let ramp = Ramp.getRampForName(rampName: rampName)
+            ramp.position = position
+            ramp.scale = SCNVector3Make(0.01, 0.01, 0.01)
+            sceneView.scene.rootNode.addChildNode(ramp)
+        }
+    }
     
 }
